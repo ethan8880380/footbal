@@ -8,6 +8,7 @@ import { TableSkeleton } from "@/components/page-states";
 import { ProspectBoard } from "@/components/prospects/prospect-board";
 import { getCollegeProduction, getCollegeSyncStatus } from "@/lib/services/college-service";
 import historical from "@/lib/data/historical-prospects.json";
+import snapshot from "@/lib/data/current-class.json";
 import { prospectSchema } from "@/lib/domain/prospects";
 import { collegePlayerSchema } from "@/lib/domain/college-model";
 import { getAppState } from "@/lib/db/repositories/settings-repository";
@@ -22,9 +23,12 @@ async function Prospects({ params }: Pick<PageProps<"/leagues/[leagueId]/prospec
   const { leagueId } = await params;
   const bundle = leagueId === "demo" ? null : await getLeagueBundle(leagueId);
   if (leagueId !== "demo" && !bundle) notFound();
-  const [rows, production, syncStatus] = await Promise.all([getCollegeProspects(), getCollegeProduction(), getCollegeSyncStatus()]);
+  const [storedRows, storedProduction, syncStatus, storedAnalytics] = await Promise.all([getCollegeProspects(), getCollegeProduction(), getCollegeSyncStatus(), getAppState("college-advanced:v1")]);
+  // Fresh deployments have an empty database; fall back to the bundled snapshot of the current class.
+  const rows = storedRows.length ? storedRows : prospectSchema.array().parse(snapshot.prospects);
+  const production = storedRows.length ? storedProduction : collegePlayerSchema.array().parse(snapshot.production);
   const history = Object.fromEntries(historical.entries.map(entry => [entry.prospect.id, entry.history]));
-  const analytics = advancedProspectSchema.array().parse(await getAppState("college-advanced:v1") ?? []);
+  const analytics = advancedProspectSchema.array().parse(storedAnalytics ?? (storedRows.length ? [] : snapshot.advanced));
   return <ProspectBoard analytics={analytics} rows={[...rows.filter(row => !history[row.id]), ...historical.entries.map(entry => prospectSchema.parse(entry.prospect))]} production={[...production.filter(row => !history[row.prospectId]), ...historical.entries.map(entry => collegePlayerSchema.parse(entry.college))]} history={history} syncStatus={syncStatus} leagueId={leagueId} defaultYear={new Date().getFullYear() + 1} />;
 }
 

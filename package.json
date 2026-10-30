@@ -14,6 +14,7 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "db:studio": "drizzle-kit studio",
     "sync": "tsx --conditions=react-server scripts/sync.ts",
+    "export:class": "tsx --conditions=react-server scripts/export-current-class.ts",
     "sync:prospects": "tsx scripts/sync-prospects.ts",
     "backtest:collect": "tsx scripts/collect-prospect-backtest.ts",
     "backtest:prospects": "tsx scripts/backtest-prospects.ts",
