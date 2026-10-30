@@ -1,3 +1,6 @@
+cut taglines, helper text and secondary labels. If a component needs them to make sense, fix the layout.
+make the best decision that will elevate all three: The user experience (UX), developer experience (DX), agent experience (AX) always, without breaking anything
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 ## This is NOT the Next.js you know

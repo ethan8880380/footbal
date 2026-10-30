@@ -1,0 +1,10 @@
+{
+  "version": "Desk v1.4",
+  "coefficient": 40,
+  "reference": 3.5,
+  "cap": 25,
+  "baselineRho": 0.31500601140142315,
+  "adjustedRho": 0.326792658382462,
+  "baselineNdcg": 0.6397341907978994,
+  "adjustedNdcg": 0.6278763134531251
+}

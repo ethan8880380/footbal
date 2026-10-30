@@ -1,0 +1,15 @@
+{
+  "version": "Desk v1.2",
+  "coefficient": 16,
+  "selected": 16,
+  "testYear": 2023,
+  "testN": 80,
+  "baselineRho": 0.249324298876516,
+  "adjustedRho": 0.25930093258879927,
+  "baselineNdcg": 0.6537545214484907,
+  "adjustedNdcg": 0.6874156109821503,
+  "gain95Interval": [
+    -0.09200457410453627,
+    0.12337723780091757
+  ]
+}

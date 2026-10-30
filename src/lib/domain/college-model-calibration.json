@@ -1,0 +1,83 @@
+{
+  "version": "Desk v1.1",
+  "weights": {
+    "QB": [
+      0.45,
+      0.2,
+      0.2,
+      0.15
+    ],
+    "RB": [
+      0.3,
+      0.3,
+      0.3,
+      0.1
+    ],
+    "WR": [
+      0.35,
+      0.3,
+      0.2,
+      0.15
+    ],
+    "TE": [
+      0.35,
+      0.3,
+      0.2,
+      0.15
+    ]
+  },
+  "backtest": {
+    "usable": 511,
+    "total": 555,
+    "train": "2016–2018",
+    "validation": "2019–2020",
+    "test": "2021–2022",
+    "outcome": "First-three-season NFL PPR",
+    "results": [
+      {
+        "position": "QB",
+        "n": 19,
+        "baselineRho": 0.27803030303030307,
+        "candidateRho": 0.09621212121212121,
+        "promoted": false,
+        "interval": [
+          -0.5273259413519447,
+          0.1337355455002514
+        ]
+      },
+      {
+        "position": "RB",
+        "n": 42,
+        "baselineRho": 0.36082283805616566,
+        "candidateRho": 0.4079565170230214,
+        "promoted": true,
+        "interval": [
+          -0.035196869898377836,
+          0.15007705303269828
+        ]
+      },
+      {
+        "position": "WR",
+        "n": 60,
+        "baselineRho": 0.2040088384974689,
+        "candidateRho": 0.2040088384974689,
+        "promoted": false,
+        "interval": [
+          0,
+          0
+        ]
+      },
+      {
+        "position": "TE",
+        "n": 23,
+        "baselineRho": 0.2779761904761905,
+        "candidateRho": 0.2595238095238095,
+        "promoted": false,
+        "interval": [
+          -0.25045372050816694,
+          0.23247232472324725
+        ]
+      }
+    ]
+  }
+}

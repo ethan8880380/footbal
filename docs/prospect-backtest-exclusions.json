@@ -1,0 +1,354 @@
+[
+  {
+    "name": "Carson Wentz",
+    "draftYear": 2016,
+    "position": "QB",
+    "pick": 2,
+    "gsisId": "00-0032950",
+    "reason": "No qualifying college production"
+  },
+  {
+    "name": "Seth Devalve",
+    "draftYear": 2016,
+    "position": "TE",
+    "pick": 138,
+    "gsisId": "00-0033080",
+    "reason": "No qualifying college production"
+  },
+  {
+    "name": "Tyreek Hill",
+    "draftYear": 2016,
+    "position": "WR",
+    "pick": 165,
+    "gsisId": "00-0033040",
+    "reason": "No qualifying college production"
+  },
+  {
+    "name": "Temarrick Hemingway",
+    "draftYear": 2016,
+    "position": "TE",
+    "pick": 177,
+    "gsisId": "00-0033112",
+    "reason": "No qualifying college production"
+  },
+  {
+    "name": "Moritz Boehringer",
+    "draftYear": 2016,
+    "position": "WR",
+    "pick": 180,
+    "gsisId": "00-0032341",
+    "reason": "[\n  {\n    \"origin\": \"string\",\n    \"code\": \"too_small\",\n    \"minimum\": 1,\n    \"inclusive\": true,\n    \"path\": [\n      \"school\"\n    ],\n    \"message\": \"Too small: expected string to have >=1 characters\"\n  }\n]"
+  },
+  {
+    "name": "Rico Gathers",
+    "draftYear": 2016,
+    "position": "TE",
+    "pick": 217,
+    "gsisId": "00-0033054",
+    "reason": "Cached 404"
+  },
+  {
+    "name": "Beau Sandland",
+    "draftYear": 2016,
+    "position": "TE",
+    "pick": 252,
+    "gsisId": "00-0032900",
+    "reason": "No qualifying college production"
+  },
+  {
+    "name": "Adam Shaheen",
+    "draftYear": 2017,
+    "position": "TE",
+    "pick": 45,
+    "gsisId": "00-0033896",
+    "reason": "Cached 404"
+  },
+  {
+    "name": "Cooper Kupp",
+    "draftYear": 2017,
+    "position": "WR",
+    "pick": 69,
+    "gsisId": "00-0033908",
+    "reason": "No qualifying college production"
+  },
+  {
+    "name": "Chad Williams",
+    "draftYear": 2017,
+    "position": "WR",
+    "pick": 98,
+    "gsisId": "00-0033933",
+    "reason": "No qualifying college production"
+  },
+  {
+    "name": "Tarik Cohen",
+    "draftYear": 2017,
+    "position": "RB",
+    "pick": 119,
+    "gsisId": "00-0033556",
+    "reason": "No qualifying college production"
+  },
+  {
+    "name": "Eric Saubert",
+    "draftYear": 2017,
+    "position": "TE",
+    "pick": 174,
+    "gsisId": "00-0033576",
+    "reason": "No qualifying college production"
+  },
+  {
+    "name": "De'Angelo Henderson",
+    "draftYear": 2017,
+    "position": "RB",
+    "pick": 203,
+    "gsisId": "00-0033581",
+    "reason": "No qualifying college production"
+  },
+  {
+    "name": "Brandon Wilson",
+    "draftYear": 2017,
+    "position": "RB",
+    "pick": 207,
+    "gsisId": "00-0033791",
+    "reason": "No qualifying college production"
+  },
+  {
+    "name": "David Moore",
+    "draftYear": 2017,
+    "position": "WR",
+    "pick": 226,
+    "gsisId": "00-0033589",
+    "reason": "Cached 404"
+  },
+  {
+    "name": "Dallas Goedert",
+    "draftYear": 2018,
+    "position": "TE",
+    "pick": 49,
+    "gsisId": "00-0034351",
+    "reason": "No qualifying college production"
+  },
+  {
+    "name": "Will Dissly",
+    "draftYear": 2018,
+    "position": "TE",
+    "pick": 120,
+    "gsisId": "00-0034159",
+    "reason": "No qualifying college production"
+  },
+  {
+    "name": "Chase Edmonds",
+    "draftYear": 2018,
+    "position": "RB",
+    "pick": 134,
+    "gsisId": "00-0034681",
+    "reason": "No qualifying college production"
+  },
+  {
+    "name": "Justin Watson",
+    "draftYear": 2018,
+    "position": "WR",
+    "pick": 144,
+    "gsisId": "00-0034386",
+    "reason": "No qualifying college production"
+  },
+  {
+    "name": "Daurice Fountain",
+    "draftYear": 2018,
+    "position": "WR",
+    "pick": 159,
+    "gsisId": "00-0034395",
+    "reason": "No qualifying college production"
+  },
+  {
+    "name": "Durham Smythe",
+    "draftYear": 2018,
+    "position": "TE",
+    "pick": 123,
+    "gsisId": "00-0034798",
+    "reason": "No qualifying college production"
+  },
+  {
+    "name": "Tremon Smith",
+    "draftYear": 2018,
+    "position": "WR",
+    "pick": 196,
+    "gsisId": "00-0034278",
+    "reason": "No qualifying college production"
+  },
+  {
+    "name": "Kyle Lauletta",
+    "draftYear": 2018,
+    "position": "QB",
+    "pick": 108,
+    "gsisId": "00-0034369",
+    "reason": "No qualifying college production"
+  },
+  {
+    "name": "Trenton Cannon",
+    "draftYear": 2018,
+    "position": "RB",
+    "pick": 204,
+    "gsisId": "00-0034164",
+    "reason": "Cached 404"
+  },
+  {
+    "name": "Trey Quinn",
+    "draftYear": 2018,
+    "position": "WR",
+    "pick": 256,
+    "gsisId": "00-0034339",
+    "reason": "No qualifying college production"
+  },
+  {
+    "name": "Drew Sample",
+    "draftYear": 2019,
+    "position": "TE",
+    "pick": 52,
+    "gsisId": "00-0035631",
+    "reason": "No qualifying college production"
+  },
+  {
+    "name": "Trevon Wesco",
+    "draftYear": 2019,
+    "position": "TE",
+    "pick": 121,
+    "gsisId": "00-0035259",
+    "reason": "No qualifying college production"
+  },
+  {
+    "name": "Foster Moreau",
+    "draftYear": 2019,
+    "position": "TE",
+    "pick": 137,
+    "gsisId": "00-0034981",
+    "reason": "No qualifying college production"
+  },
+  {
+    "name": "Zach Gentry",
+    "draftYear": 2019,
+    "position": "TE",
+    "pick": 141,
+    "gsisId": "00-0035222",
+    "reason": "No qualifying college production"
+  },
+  {
+    "name": "Juwann Winfree",
+    "draftYear": 2019,
+    "position": "WR",
+    "pick": 187,
+    "gsisId": "00-0035593",
+    "reason": "No qualifying college production"
+  },
+  {
+    "name": "Cullen Gillaspia",
+    "draftYear": 2019,
+    "position": "RB",
+    "pick": 220,
+    "gsisId": "00-0035304",
+    "reason": "No qualifying college production"
+  },
+  {
+    "name": "Alizé Mack",
+    "draftYear": 2019,
+    "position": "TE",
+    "pick": 231,
+    "gsisId": "00-0035309",
+    "reason": "No qualifying college production"
+  },
+  {
+    "name": "Charlie Woerner",
+    "draftYear": 2020,
+    "position": "TE",
+    "pick": 190,
+    "gsisId": "00-0036429",
+    "reason": "No qualifying college production"
+  },
+  {
+    "name": "Cole McDonald",
+    "draftYear": 2020,
+    "position": "QB",
+    "pick": 224,
+    "gsisId": "",
+    "reason": "No unique ESPN/GSIS crosswalk"
+  },
+  {
+    "name": "Luke Farrell",
+    "draftYear": 2021,
+    "position": "TE",
+    "pick": 145,
+    "gsisId": "00-0036887",
+    "reason": "No qualifying college production"
+  },
+  {
+    "name": "Zach Davidson",
+    "draftYear": 2021,
+    "position": "TE",
+    "pick": 168,
+    "gsisId": "00-0036640",
+    "reason": "Cached 404"
+  },
+  {
+    "name": "Noah Gray",
+    "draftYear": 2021,
+    "position": "TE",
+    "pick": 162,
+    "gsisId": "00-0036637",
+    "reason": "No qualifying college production"
+  },
+  {
+    "name": "Cornell Powell",
+    "draftYear": 2021,
+    "position": "WR",
+    "pick": 181,
+    "gsisId": "00-0036647",
+    "reason": "No qualifying college production"
+  },
+  {
+    "name": "Mike Strachan",
+    "draftYear": 2021,
+    "position": "WR",
+    "pick": 229,
+    "gsisId": "00-0036482",
+    "reason": "Cached 404"
+  },
+  {
+    "name": "Cade Otton",
+    "draftYear": 2022,
+    "position": "TE",
+    "pick": 106,
+    "gsisId": "00-0038129",
+    "reason": "No qualifying college production"
+  },
+  {
+    "name": "Jake Ferguson",
+    "draftYear": 2022,
+    "position": "TE",
+    "pick": 129,
+    "gsisId": "00-0038041",
+    "reason": "No qualifying college production"
+  },
+  {
+    "name": "John FitzPatrick",
+    "draftYear": 2022,
+    "position": "TE",
+    "pick": 213,
+    "gsisId": "00-0037306",
+    "reason": "No qualifying college production"
+  },
+  {
+    "name": "Dareke Young",
+    "draftYear": 2022,
+    "position": "WR",
+    "pick": 233,
+    "gsisId": "00-0037093",
+    "reason": "Cached 404"
+  },
+  {
+    "name": "Ko Kieft",
+    "draftYear": 2022,
+    "position": "TE",
+    "pick": 218,
+    "gsisId": "00-0037311",
+    "reason": "No qualifying college production"
+  }
+]
