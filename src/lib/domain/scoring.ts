@@ -183,3 +183,6 @@ export function scoreStatLine(
   }
   return { points: Math.round(points * 100) / 100, isPartial: unsupportedRulesFor(support, position).length > 0 };
 }
+
+/** Common IDP scoring used to turn defensive production into one comparable fantasy outcome. */
+export const IDP_SCORING: Record<string, number> = { idp_tkl_solo: 1, idp_tkl_ast: 0.5, idp_tkl_loss: 1, idp_sack: 4, idp_qb_hit: 1, idp_int: 5, idp_pass_def: 1.5, idp_ff: 3, idp_fum_rec: 2, idp_def_td: 6, idp_safe: 2 };

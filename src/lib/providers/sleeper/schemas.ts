@@ -113,3 +113,26 @@ export const sleeperPlayerSchema = z.object({
   metadata: z.record(z.string(), z.unknown()).nullish(),
 });
 export type SleeperPlayer = z.infer<typeof sleeperPlayerSchema>;
+
+export const matchupSchema = z.object({
+  roster_id: id,
+  matchup_id: z.number().nullish(),
+  points: z.number().nullish().transform((v) => v ?? 0),
+  /** Slot order matches the league's non-bench `roster_positions`; "0" marks an empty slot. */
+  starters: z.array(z.union([z.string(), z.number()]).nullable()).nullish().transform((list) => (list ?? []).map((v) => (v == null ? "0" : String(v)))),
+  starters_points: z.array(z.number().nullable()).nullish().transform((list) => (list ?? []).map((v) => v ?? 0)),
+  players: idList,
+  players_points: z.record(z.string(), z.number().nullable()).nullish().transform((v) => v ?? {}),
+});
+export type SleeperMatchup = z.infer<typeof matchupSchema>;
+
+export const projectionSchema = z.object({
+  player_id: id,
+  /** Keys match league `scoring_settings`; values are per-game means. */
+  stats: z
+    .record(z.string(), z.number().nullable())
+    .nullish()
+    .transform((stats) => Object.fromEntries(Object.entries(stats ?? {}).filter((e): e is [string, number] => typeof e[1] === "number" && e[1] !== 0))),
+  company: z.string().nullish(),
+});
+export type SleeperProjection = z.infer<typeof projectionSchema>;

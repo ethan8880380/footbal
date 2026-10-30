@@ -6,6 +6,7 @@ import {
   sqliteTable,
   text,
 } from "drizzle-orm/sqlite-core";
+import type { PropLine } from "@/lib/domain/player-props";
 
 const json = <T>(name: string) => text(name, { mode: "json" }).$type<T>();
 
@@ -209,10 +210,13 @@ export const scheduleGames = sqliteTable(
     week: integer("week").notNull(),
     gameType: text("game_type").notNull(),
     gameday: text("gameday"),
+    gametime: text("gametime"),
     homeTeam: text("home_team").notNull(),
     awayTeam: text("away_team").notNull(),
     homeScore: integer("home_score"),
     awayScore: integer("away_score"),
+    spreadLine: real("spread_line"),
+    totalLine: real("total_line"),
   },
   (t) => [index("schedule_season_idx").on(t.season)],
 );
@@ -268,6 +272,20 @@ export const metricObservations = sqliteTable(
     importBatch: text("import_batch"),
   },
   (t) => [index("metric_obs_player_idx").on(t.playerId)],
+);
+
+export const playerProjections = sqliteTable(
+  "player_projections",
+  {
+    source: text("source").notNull(),
+    season: integer("season").notNull(),
+    week: integer("week").notNull(),
+    playerId: text("player_id").notNull(),
+    stats: json<Record<string, number>>("stats"),
+    lines: json<PropLine[]>("lines"),
+    retrievedAt: text("retrieved_at").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.source, t.season, t.week, t.playerId] })],
 );
 
 export const marketRuns = sqliteTable(

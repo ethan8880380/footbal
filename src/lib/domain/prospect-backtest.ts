@@ -1,7 +1,6 @@
-import { evaluateCollegePlayer, type CollegePlayer } from "./college-model";
-import type { Prospect } from "./prospects";
+import { evaluateCollegePlayer, type CollegePlayer, type OffensePosition } from "./college-model";
 
-export type Position = Prospect["position"];
+export type Position = OffensePosition;
 export type Weights = [number, number, number, number];
 export const ORIGINAL_WEIGHTS: Record<Position, Weights> = { QB: [.45, .20, .20, .15], RB: [.30, .30, .20, .20], WR: [.35, .30, .20, .15], TE: [.35, .30, .20, .15] };
 export interface HistoricalRow { name: string; gsisId: string; draftYear: number; position: Position; pick: number; college: CollegePlayer; outcome: number; }

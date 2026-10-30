@@ -1,4 +1,4 @@
-import { inArray, sql } from "drizzle-orm";
+import { inArray, isNotNull, sql } from "drizzle-orm";
 import type { Database } from "../client";
 import { mappingIssues, playerIds, players } from "../schema";
 import type { IdentityRecord, MappingIssue, PlayerRecord } from "@/lib/domain/types";
@@ -42,6 +42,11 @@ export async function listIdentitySources(database?: Database) {
   return db
     .select({ playerId: players.playerId, gsisId: players.gsisId, sportradarId: players.sportradarId, position: players.position })
     .from(players);
+}
+
+export async function listNflTeamPlayers(database?: Database) {
+  const db = await resolveDb(database);
+  return db.select({ playerId: players.playerId, fullName: players.fullName, team: players.team }).from(players).where(isNotNull(players.team));
 }
 
 export async function replaceIdentities(identities: IdentityRecord[], issues: MappingIssue[], database?: Database) {

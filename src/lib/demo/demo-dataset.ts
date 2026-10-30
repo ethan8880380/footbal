@@ -95,10 +95,13 @@ export async function loadDemoDataset(): Promise<LeagueDataset> {
         week,
         gameType: "REG",
         gameday: `2026-${week <= 3 ? "09" : "10"}-${String(((week * 7) % 28) + 1).padStart(2, "0")}`,
+        gametime: "13:00",
         homeTeam: rotated[g],
         awayTeam: rotated[rotated.length - 1 - g],
         homeScore: week <= WEEKS ? 20 : null,
         awayScore: week <= WEEKS ? 17 : null,
+        spreadLine: ((week * 5 + g * 3) % 13) - 6 + 0.5,
+        totalLine: 40.5 + ((week * 3 + g * 7) % 14),
       });
     }
   }

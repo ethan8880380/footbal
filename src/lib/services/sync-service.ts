@@ -9,7 +9,9 @@ import { analyzeLeagueFormat } from "@/lib/domain/league-format";
 import type { StepResult } from "@/lib/ingest/freshness";
 import { syncLeague } from "@/lib/ingest/sync-league";
 import { syncMarket, syncValueHistory } from "@/lib/ingest/sync-market";
+import { syncPlayerProps, syncProjections } from "@/lib/ingest/sync-projections";
 import { syncIdentity, syncProspects, syncSleeperPlayers, syncStats } from "@/lib/ingest/sync-sources";
+import { MATCHUP_WEEKS } from "@/lib/view/matchup-view";
 import { mapLeagueToStatsGuy } from "@/lib/providers/market/stats-guy";
 import { resolveSeasons, sleeperClient } from "@/lib/providers/sleeper/sleeper-client";
 import { recordSyncRun } from "@/lib/db/repositories/history-repository";
@@ -57,6 +59,11 @@ export async function refreshLeague(leagueId: string, options: { force?: boolean
   const seasons = state ? resolveSeasons(state) : null;
   const statsSeasons = seasons ? [seasons.statsSeason, seasons.statsSeason - 1] : [new Date().getFullYear() - 1];
   steps.push(...(await syncStats(statsSeasons, force)));
+  if (state?.season_type === "regular") {
+    const season = Number(state.season);
+    steps.push(...(await syncProjections(season, [state.week, state.week + 1].filter((w) => w <= MATCHUP_WEEKS), force)));
+    steps.push(await syncPlayerProps(season, force));
+  }
   steps.push(await syncProspects(force));
 
   const bundle = await getLeagueBundle(leagueId);

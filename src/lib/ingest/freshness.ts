@@ -6,6 +6,9 @@ export const REFRESH_INTERVALS = {
   stats: 12 * 60 * 60 * 1000,
   prospects: 7 * 24 * 60 * 60 * 1000,
   market: 12 * 60 * 60 * 1000,
+  projections: 3 * 60 * 60 * 1000,
+  /** SportsGameOdds' free tier allows 2,500 games a month; a refresh costs about one per game on the slate. */
+  props: 2 * 60 * 60 * 1000,
   league: 0,
 };
 

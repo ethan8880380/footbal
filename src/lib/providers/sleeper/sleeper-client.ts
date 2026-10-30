@@ -4,16 +4,25 @@ import {
   draftSchema,
   leagueSchema,
   leagueUserSchema,
+  matchupSchema,
   nflStateSchema,
+  projectionSchema,
   rosterSchema,
   sleeperPlayerSchema,
   sleeperUserSchema,
   tradedPickSchema,
   type SleeperPlayer,
+  type SleeperProjection,
 } from "./schemas";
 
 export const SLEEPER_API = "https://api.sleeper.app/v1";
 export const SLEEPER_DOCS = "https://docs.sleeper.com/";
+const PROJECTION_POSITIONS = ["QB", "RB", "WR", "TE", "K", "DEF", "DL", "LB", "DB"];
+
+/** Undocumented endpoint behind Sleeper's in-app projections (sourced from Rotowire). */
+export function sleeperProjectionsUrl(season: number, week: number) {
+  return `https://api.sleeper.app/projections/nfl/${season}/${week}`;
+}
 
 async function get<T extends z.ZodType>(path: string, schema: T): Promise<z.infer<T>> {
   const data = await fetchJson<unknown>(`${SLEEPER_API}${path}`);
@@ -30,6 +39,12 @@ export const sleeperClient = {
   getLeague: (leagueId: string) => get(`/league/${leagueId}`, leagueSchema),
   getRosters: (leagueId: string) => get(`/league/${leagueId}/rosters`, z.array(rosterSchema)),
   getLeagueUsers: (leagueId: string) => get(`/league/${leagueId}/users`, z.array(leagueUserSchema)),
+  async getProjections(season: number, week: number): Promise<SleeperProjection[]> {
+    const positions = PROJECTION_POSITIONS.map((p) => `position[]=${p}`).join("&");
+    const data = await fetchJson<unknown>(`${sleeperProjectionsUrl(season, week)}?season_type=regular&${positions}`, { timeoutMs: 120_000 });
+    return z.array(projectionSchema).parse(data);
+  },
+  getMatchups: (leagueId: string, week: number) => get(`/league/${leagueId}/matchups/${week}`, z.array(matchupSchema).nullish().transform((v) => v ?? [])),
   getDrafts: (leagueId: string) => get(`/league/${leagueId}/drafts`, z.array(draftSchema)),
   getTradedPicks: (leagueId: string) => get(`/league/${leagueId}/traded_picks`, z.array(tradedPickSchema)),
   getDraftTradedPicks: (draftId: string) => get(`/draft/${draftId}/traded_picks`, z.array(tradedPickSchema)),

@@ -206,6 +206,8 @@
   .prospect-table td:first-child { padding: 10px; }
 }
 
+.prospect-table tbody tr:hover > td.sticky { background-color: var(--muted); }
+
 @keyframes content-enter {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }

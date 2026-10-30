@@ -97,10 +97,13 @@ export async function fetchSchedule(seasons: number[]): Promise<ScheduleGame[]> 
       week,
       gameType: str(row.game_type) ?? "REG",
       gameday: str(row.gameday),
+      gametime: str(row.gametime),
       homeTeam: home,
       awayTeam: away,
       homeScore: num(row.home_score),
       awayScore: num(row.away_score),
+      spreadLine: num(row.spread_line),
+      totalLine: num(row.total_line),
     }];
   });
 }

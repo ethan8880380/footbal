@@ -1,7 +1,10 @@
-import { listLeagues } from "../src/lib/db/repositories/league-repository";
-import { refreshLeague } from "../src/lib/services/sync-service";
+import { existsSync } from "node:fs";
+
+if (existsSync(".env.local")) process.loadEnvFile(".env.local");
 
 async function main() {
+  const { listLeagues } = await import("../src/lib/db/repositories/league-repository");
+  const { refreshLeague } = await import("../src/lib/services/sync-service");
   const force = process.argv.includes("--force");
   const leagues = await listLeagues();
   if (leagues.length === 0) console.log("No leagues connected yet. Connect one in the app first.");

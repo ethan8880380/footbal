@@ -116,7 +116,9 @@ export async function syncStats(candidateSeasons: number[], force = false) {
     await runStep("schedule", "nflverse", async () => {
       const games = await fetchSchedule(candidateSeasons);
       await replaceSchedule(candidateSeasons, games);
-      return { rowCount: games.length, sourceUrl: NFLVERSE_URLS.schedule };
+      const upcoming = games.filter((g) => g.homeScore === null);
+      const lined = upcoming.filter((g) => g.spreadLine !== null && g.totalLine !== null).length;
+      return { rowCount: games.length, sourceUrl: NFLVERSE_URLS.schedule, message: `${games.length} games; Vegas lines on ${lined} of ${upcoming.length} upcoming.` };
     }),
   );
   return results;

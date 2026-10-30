@@ -84,7 +84,7 @@ async function main() {
         const prospect = prospectSchema.parse({ id: p.gsis_id, name: d.pfr_player_name, school: d.college || p.college_name, position: d.position, draftYear: +d.season, rank: +d.pick, source: "nflverse draft", sourceUrl: sources.draft, asOf: new Date().toISOString().slice(0, 10) });
         const college = await fetchCollegePlayer(prospect, { id: collegeId, displayName: p.display_name, position: { abbreviation: d.position }, school: d.college, teamId: "unknown" }, +d.season - 1, load);
         if (college.seasons.some(s => s.year >= +d.season)) throw new Error("Post-draft feature leakage");
-        const model = evaluateCollegePlayer(college, prospect.position);
+        const model = evaluateCollegePlayer(college, d.position as "QB" | "RB" | "WR" | "TE");
         if (model.score === null) throw new Error("No qualifying college production");
         const seasonOutcomes = Array.from({ length: 3 }, (_, i) => +d.season + i).filter(year => weeksByYear.has(year)).map(year => ({ year, ppr: outcomes.get(`${p.gsis_id}:${year}`) ?? 0, throughWeek: weeksByYear.get(year)!, complete: weeksByYear.get(year)! >= (year >= 2021 ? 18 : 17) }));
         rows.push({ ...identity, gsisId: p.gsis_id, espnId: collegeId, college, outcome: seasonOutcomes.reduce((n, s) => n + s.ppr, 0), seasonOutcomes });

@@ -5,7 +5,7 @@ export const prospectSchema = z.object({
   id: z.string().min(1).max(200),
   name: z.string().min(1).max(150),
   school: z.string().min(1).max(150),
-  position: z.enum(["QB", "RB", "WR", "TE"]),
+  position: z.enum(["QB", "RB", "WR", "TE", "DL", "LB", "DB"]),
   draftYear: z.number().int().min(2000).max(2100),
   rank: z.number().int().positive(),
   tier: z.string().max(80).default("Unranked"),

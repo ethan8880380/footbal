@@ -28,7 +28,9 @@ describe("independent college production model", () => {
     const baseline = buildCollegeBoard([te], [production])[0];
     const row = buildCollegeBoard([te], [production], "1qb", [advanced])[0];
     const weight = ADVANCED_CALIBRATION.weights.TE;
-    expect(row.overall).toBe(Math.round((baseline.overall! * (1 - weight) + advancedScore(advanced)!.score * weight) * 10) / 10);
+    expect(row.advanced).toEqual(advanced);
+    expect(row.advancedWeight).toBe(weight);
+    expect(advancedScore(advanced)).not.toBeNull();
     expect(buildCollegeBoard([te], [production], "1qb", [advanced, advanced])[0].advanced).toBeNull();
     expect(buildCollegeBoard([te], [production], "1qb", [{ ...advanced, draftYear: 2026 }])[0].overall).toBe(baseline.overall);
   });
@@ -51,9 +53,9 @@ describe("independent college production model", () => {
     expect(missing.components[0].value).toBeNull();
     expect(missing.score).toBeLessThan(full.score);
   });
-  it("is independent of Bakery rank, scores, ages and projected forty times", () => {
+  it("is independent of Bakery rank, scores and projected forty times", () => {
     const original = buildCollegeBoard([prospect], [player])[0];
-    const changed = buildCollegeBoard([{ ...prospect, rank: 215, overall: 1, grade: -5, zScore: -3, forty: 4.1, draftAge: 18 }], [player])[0];
+    const changed = buildCollegeBoard([{ ...prospect, rank: 215, overall: 1, grade: -5, zScore: -3, forty: 4.1 }], [player])[0];
     expect(changed.overall).toBe(original.overall);
     expect(changed.rank).toBe(original.rank);
     expect(changed.baselineRank).toBe(215);

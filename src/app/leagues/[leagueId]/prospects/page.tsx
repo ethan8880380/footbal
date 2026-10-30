@@ -8,7 +8,10 @@ import { TableSkeleton } from "@/components/page-states";
 import { ProspectBoard } from "@/components/prospects/prospect-board";
 import { getCollegeProduction, getCollegeSyncStatus } from "@/lib/services/college-service";
 import historical from "@/lib/data/historical-prospects.json";
+import defense from "@/lib/data/defense-prospects.json";
 import snapshot from "@/lib/data/current-class.json";
+import bakeryGrades from "@/lib/data/bakery-grades.json";
+import { bakeryGradeSchema } from "@/lib/domain/bakery-grades";
 import { prospectSchema } from "@/lib/domain/prospects";
 import { collegePlayerSchema } from "@/lib/domain/college-model";
 import { getAppState } from "@/lib/db/repositories/settings-repository";
@@ -27,8 +30,9 @@ async function Prospects({ params }: Pick<PageProps<"/leagues/[leagueId]/prospec
   // Fresh deployments have an empty database; fall back to the bundled snapshot of the current class.
   const rows = storedRows.length ? storedRows : prospectSchema.array().parse(snapshot.prospects);
   const production = storedRows.length ? storedProduction : collegePlayerSchema.array().parse(snapshot.production);
-  const history = Object.fromEntries(historical.entries.map(entry => [entry.prospect.id, entry.history]));
+  const entries = [...historical.entries, ...defense.entries, ...defense.current.map(entry => ({ ...entry, history: undefined }))];
+  const history = Object.fromEntries(entries.flatMap(entry => entry.history ? [[entry.prospect.id, entry.history] as const] : []));
   const analytics = advancedProspectSchema.array().parse(storedAnalytics ?? (storedRows.length ? [] : snapshot.advanced));
-  return <ProspectBoard analytics={analytics} rows={[...rows.filter(row => !history[row.id]), ...historical.entries.map(entry => prospectSchema.parse(entry.prospect))]} production={[...production.filter(row => !history[row.prospectId]), ...historical.entries.map(entry => collegePlayerSchema.parse(entry.college))]} history={history} syncStatus={syncStatus} leagueId={leagueId} defaultYear={new Date().getFullYear() + 1} />;
+  return <ProspectBoard grades={bakeryGradeSchema.array().parse(bakeryGrades)} analytics={analytics} rows={[...rows.filter(row => !history[row.id]), ...entries.map(entry => prospectSchema.parse(entry.prospect))]} production={[...production.filter(row => !history[row.prospectId]), ...entries.map(entry => collegePlayerSchema.parse(entry.college))]} history={history} syncStatus={syncStatus} leagueId={leagueId} defaultYear={new Date().getFullYear() + 1} />;
 }
 

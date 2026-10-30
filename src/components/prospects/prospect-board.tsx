@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useActionState, useMemo, useState, useTransition } from "react";
 import Image from "next/image";
@@ -18,12 +18,20 @@ import { buildCollegeBoard, COLLEGE_MODEL_VERSION, COLLEGE_CALIBRATION, COMPETIT
 import type { CollegeSyncResult } from "@/lib/services/college-service";
 import type { ProspectHistory } from "@/lib/domain/historical-prospects";
 import { ADVANCED_CALIBRATION, METRIC_LABELS, metricDisplay, type AdvancedProspect } from "@/lib/domain/advanced-prospects";
+import { GRADE_MODEL_CALIBRATION } from "@/lib/domain/grade-model";
+import { BAKERY_CALIBRATION, type BakeryGrade } from "@/lib/domain/bakery-grades";
 import { DRAFT_CALIBRATION } from "@/lib/domain/draft-capital";
+import { DEFENSE_POSITIONS, isDefensePosition } from "@/lib/domain/defense-model";
+import { DefenseProfile } from "./defense-profile";
 import { ProspectLab } from "./prospect-lab";
+import { SpreadMeter } from "./lab-charts";
+import { MonoLabel } from "@/components/viz/readout";
 
-const ANALYTIC_COLUMNS = { all: ["Y/RR", "T/RR", "UCTPRR", "MTF/A", "YCO/A", "ADJ%", "BTT%", "TWP%"], WR: ["Y/RR", "T/RR", "UCTPRR", "CTPRR", "YAC/R", "aDOT", "Drop%", "CC%", "Separation"], TE: ["Y/RR", "T/RR", "UCTPRR", "CTPRR", "YAC/R", "aDOT", "Drop%", "CC%"], RB: ["MTF/A", "YCO/A", "RPT", "ELU", "Break %"], QB: ["ADJ%", "BTT%", "TWP%", "MTF/A", "YCO/A"] };
+const ANALYTIC_COLUMNS = { all: ["Y/RR", "T/RR", "UCTPRR", "MTF/A", "YCO/A", "ADJ%", "BTT%", "TWP%"], WR: ["Y/RR", "T/RR", "UCTPRR", "CTPRR", "YAC/R", "aDOT", "Drop%", "CC%", "Separation"], TE: ["Y/RR", "T/RR", "UCTPRR", "CTPRR", "YAC/R", "aDOT", "Drop%", "CC%"], RB: ["MTF/A", "YCO/A", "RPT", "ELU", "Break %"], QB: ["ADJ%", "BTT%", "TWP%", "MTF/A", "YCO/A"], DL: [] as string[], LB: [] as string[], DB: [] as string[] };
 
-const POSITIONS = ["QB", "RB", "WR", "TE"] as const;
+const OFFENSE = ["QB", "RB", "WR", "TE"] as const;
+const POSITIONS = [...OFFENSE, ...DEFENSE_POSITIONS] as const;
+const isOffense = (row: { position: string }) => (OFFENSE as readonly string[]).includes(row.position);
 const SORTS = ["rank", "overall"] as const;
 const SELECT = "h-9 rounded-full border border-input bg-card px-3 text-sm focus-visible:outline-2 focus-visible:outline-ring";
 const num = (value: number | null, digits = 1) => value === null ? "—" : value.toFixed(digits);
@@ -34,7 +42,7 @@ function competitionDelta(row: CollegeBoardRow) {
   return row.model.seasons.reduce((n, season, i) => n + weights[i] * (season.score - season.productionScore), 0);
 }
 
-export function ProspectBoard({ rows: baseline, production, analytics = [], history = {}, syncStatus, leagueId, defaultYear }: { rows: Prospect[]; production: CollegePlayer[]; analytics?: AdvancedProspect[]; history?: Record<string, ProspectHistory>; syncStatus: CollegeSyncResult | null; leagueId: string; defaultYear: number }) {
+export function ProspectBoard({ rows: baseline, production, grades = [], analytics = [], history = {}, syncStatus, leagueId, defaultYear }: { rows: Prospect[]; production: CollegePlayer[]; grades?: BakeryGrade[]; analytics?: AdvancedProspect[]; history?: Record<string, ProspectHistory>; syncStatus: CollegeSyncResult | null; leagueId: string; defaultYear: number }) {
   const years = [...new Set([...baseline.map(r => r.draftYear), defaultYear, defaultYear + 1, defaultYear + 2])].sort((a, b) => a - b);
   const [state, setState] = useQueryStates({
     year: parseAsInteger.withDefault(defaultYear),
@@ -48,7 +56,7 @@ export function ProspectBoard({ rows: baseline, production, analytics = [], hist
     metric: parseAsString.withDefault(""),
     grading: parseAsStringLiteral(["draft", "college"] as const).withDefault("draft"),
   });
-  const rows = useMemo(() => buildCollegeBoard(baseline, production, state.format, analytics, history, state.grading === "draft").map(row => ({ ...row, history: history[row.id] })), [baseline, production, analytics, history, state.format, state.grading]);
+  const rows = useMemo(() => buildCollegeBoard(baseline, production, state.format, analytics, history, state.grading === "draft", grades).map(row => ({ ...row, history: history[row.id] })), [baseline, production, grades, analytics, history, state.format, state.grading]);
   const [teams, setTeams] = useState(12);
   const [selected, setSelected] = useState<string[]>([]);
   const [profile, setProfile] = useState<CollegeBoardRow | null>(null);
@@ -57,18 +65,32 @@ export function ProspectBoard({ rows: baseline, production, analytics = [], hist
   const query = state.q.trim().toLowerCase();
   const filtered = sortProspects(classRows.filter(r => (state.pos === "all" || r.position === state.pos) && (state.tier === "all" || r.tier === state.tier) && `${r.name} ${r.school}`.toLowerCase().includes(query)), state.sort, state.dir === "desc");
   const analyticColumns = ANALYTIC_COLUMNS[state.pos];
-  if (state.view === "analytics" && analyticColumns.includes(state.metric)) filtered.sort((a, b) => {
-    const x = a.advanced?.metrics[state.metric] ?? null, y = b.advanced?.metrics[state.metric] ?? null;
-    return x === null ? (y === null ? a.rank - b.rank : 1) : y === null ? -1 : (state.dir === "asc" ? x - y : y - x) || a.rank - b.rank;
-  });
+  if (state.metric) {
+    const sign = state.dir === "asc" ? 1 : -1;
+    filtered.sort((a, b) => {
+      const x = columnValue(a, state.metric), y = columnValue(b, state.metric);
+      if (x === null || y === null) return x === y ? a.rank - b.rank : x === null ? 1 : -1;
+      return sign * (typeof x === "string" ? x.localeCompare(y as string) : x - (y as number)) || a.rank - b.rank;
+    });
+  }
   const compareRows = selected.flatMap(key => rows.find(r => rowKey(r) === key) ?? []);
   const toggleSort = (sort: "rank" | "overall") => setState({ metric: "", sort, dir: state.sort === sort ? (state.dir === "asc" ? "desc" : "asc") : sort === "rank" ? "asc" : "desc" });
   const scored = classRows.filter(r => r.overall !== null).length;
   const historicalClass = classRows.some(row => row.history);
+  const defenseView = state.pos !== "all" && isDefensePosition(state.pos);
+  // The research lab models offensive positions only; defenders fall back to the production table.
+  const view = defenseView && state.view === "lab" ? "production" : state.view;
 
   function sortHead(label: string, key: "rank" | "overall") {
     return <TableHead className="text-right" aria-sort={!state.metric && state.sort === key ? (state.dir === "asc" ? "ascending" : "descending") : "none"}>
       <button className="inline-flex items-center gap-1 py-3 focus-visible:outline-2" onClick={() => toggleSort(key)}>{label}{!state.metric && state.sort === key ? state.dir === "asc" ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" /> : null}</button>
+    </TableHead>;
+  }
+
+  function colHead(label: string, key: string, options: { text?: boolean; title?: string; className?: string } = {}) {
+    const active = state.metric === key;
+    return <TableHead key={key} className={`${options.text ? "" : "text-right"} ${options.className ?? ""}`} aria-sort={active ? (state.dir === "asc" ? "ascending" : "descending") : "none"}>
+      <button className={`inline-flex items-center gap-1 py-3 hover:text-foreground focus-visible:outline-2 ${active ? "text-foreground" : ""}`} title={options.title} onClick={() => setState({ metric: key, dir: active ? (state.dir === "asc" ? "desc" : "asc") : options.text ? "asc" : "desc" })}>{label}{active ? state.dir === "asc" ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" /> : null}</button>
     </TableHead>;
   }
 
@@ -112,22 +134,22 @@ export function ProspectBoard({ rows: baseline, production, analytics = [], hist
       {selected.length > 0 && <><Button variant="outline" size="sm" disabled={compareRows.length < 2} onClick={() => setComparing(true)}>Compare ({compareRows.length}/3)</Button><Button variant="ghost" size="sm" onClick={() => setSelected([])}>Clear</Button></>}
     </div>
 
-    {state.view === "lab" && <ProspectLab rows={rows} visibleRows={filtered} mode={state.grading} onProfile={setProfile} />}
-    {!classRows.length ? <EmptyState title={`No ${state.year} prospects`} /> : !filtered.length ? <EmptyState title="No matching prospects"><Button variant="ghost" onClick={() => setState({ q: "", tier: "all", pos: "all" })}>Clear filters</Button></EmptyState> : state.view === "lab" ? null : <div className="rounded-3xl bg-card px-3 py-2">
+    {view === "lab" && <ProspectLab rows={rows.filter(isOffense)} visibleRows={filtered.filter(isOffense)} mode={state.grading} onProfile={setProfile} />}
+    {!classRows.length ? <EmptyState title={`No ${state.year} prospects`} /> : !filtered.length ? <EmptyState title="No matching prospects"><Button variant="ghost" onClick={() => setState({ q: "", tier: "all", pos: "all" })}>Clear filters</Button></EmptyState> : view === "lab" ? null : <div className="rounded-3xl bg-card px-3 py-2">
       <Table className="prospect-table">
         <TableHeader><TableRow>
           <TableHead><span className="sr-only">Compare</span></TableHead>
-          {sortHead(historicalClass ? "Desk rank" : "Pick", "rank")}<TableHead>Player</TableHead><TableHead>School</TableHead><TableHead>Pos</TableHead><TableHead>Tier</TableHead>
-          {sortHead("Desk score", "overall")}<TableHead>Draft input</TableHead><TableHead>Competition Δ</TableHead><TableHead>{historicalClass ? "NFL pick" : "Bakery rank"}</TableHead>{historicalClass && <><TableHead>NFL PPR</TableHead><TableHead>NFL window</TableHead></>}{state.view === "analytics" ? analyticColumns.map(key => <TableHead key={key} aria-sort={state.metric === key ? (state.dir === "asc" ? "ascending" : "descending") : "none"}><button title={METRIC_LABELS[key] ?? key} onClick={() => setState({ metric: key, dir: state.metric === key && state.dir === "desc" ? "asc" : "desc" })}>{key === "Separation" ? "Separation proxy" : key}{state.metric === key ? (state.dir === "desc" ? " ↓" : " ↑") : ""}</button></TableHead>) : <><TableHead>Season</TableHead><TableHead>Games</TableHead><TableHead>Rec yds</TableHead><TableHead>Rush yds</TableHead><TableHead>Pass yds</TableHead><TableHead>Scored through</TableHead><TableHead>Evidence</TableHead></>}
+          {sortHead(historicalClass ? "Desk rank" : "Pick", "rank")}{colHead("Player", "name", { text: true, className: "sticky left-0 z-10 bg-card shadow-[1px_0_0_var(--border)]" })}{colHead("School", "school", { text: true })}{colHead("Pos", "position", { text: true })}{colHead("Tier", "tier", { text: true })}
+          {sortHead("Desk score", "overall")}<TableHead>Draft input</TableHead>{colHead("Competition Δ", "delta")}{colHead(historicalClass ? "NFL pick" : "Bakery rank", "bakery")}{historicalClass && <>{colHead(defenseView ? "NFL IDP" : "NFL PPR", "ppr")}<TableHead>NFL window</TableHead></>}{view === "analytics" ? analyticColumns.map(key => colHead(key === "Separation" ? "Separation proxy" : key, key, { title: METRIC_LABELS[key] ?? key })) : <>{colHead("Season", "season")}{colHead("Games", "games")}{defenseView ? <>{colHead("Tackles", "tackles")}{colHead("Sacks", "sacks")}{colHead("INT + PD", "pd")}</> : <>{colHead("Rec yds", "recYds")}{colHead("Rush yds", "rushYds")}{colHead("Pass yds", "passYds")}</>}<TableHead>Scored through</TableHead><TableHead>Evidence</TableHead></>}
         </TableRow></TableHeader>
-        <TableBody>{filtered.map(row => <TableRow key={rowKey(row)}>
+        <TableBody>{filtered.map(row => <TableRow key={rowKey(row)} className="group hover:bg-muted">
           <TableCell><input type="checkbox" aria-label={`Compare ${row.name}`} checked={selected.includes(rowKey(row))} disabled={selected.length >= 3 && !selected.includes(rowKey(row))} onChange={e => setSelected(current => e.target.checked ? [...current, rowKey(row)] : current.filter(key => key !== rowKey(row)))} className="size-4 accent-foreground" /></TableCell>
           <TableCell className="text-right font-mono text-muted-foreground">{row.overall === null ? "—" : historicalClass ? `#${row.rank}` : prospectPick(row.rank, teams)}</TableCell>
-          <TableCell><button onClick={() => setProfile(row)} className="flex items-center gap-3 py-1 font-medium underline-offset-4 hover:underline focus-visible:underline"><ProspectHeadshot player={row} size={40} />{row.name}</button></TableCell>
+          <TableCell className="sticky left-0 z-10 bg-card shadow-[1px_0_0_var(--border)]"><button onClick={() => setProfile(row)} className="flex items-center gap-3 py-1 font-medium underline-offset-4 hover:underline focus-visible:underline"><ProspectHeadshot player={row} size={40} />{row.name}</button></TableCell>
           <TableCell className="text-muted-foreground">{row.school}</TableCell><TableCell className="font-mono text-xs">{row.position}</TableCell>
           <TableCell><span className="rounded-full bg-foreground/5 px-2.5 py-1 text-xs">{row.tier}</span></TableCell>
           <TableCell className="text-right font-semibold tabular-nums">{num(row.overall)}</TableCell><TableCell>{row.draft ? `${row.draft.kind === "Projection" ? "Proj. " : "Pick "}${row.draft.label}` : "College only"}</TableCell><TableCell className="text-right font-mono">{row.model.seasons.some(s => s.scheduleStrength) ? signed(competitionDelta(row)) : "—"}</TableCell><TableCell className="text-right font-mono">#{row.history?.draftPick ?? row.baselineRank}</TableCell>{historicalClass && <><TableCell className="text-right font-mono">{num(row.history?.nflPpr ?? null)}</TableCell><TableCell>{row.history?.window ?? "—"}</TableCell></>}
-          {state.view === "analytics" ? analyticColumns.map(key => <TableCell key={key} className="text-right font-mono">{metricDisplay(key, row.advanced?.metrics[key] ?? null)}</TableCell>) : <><TableCell>{latest(row)?.year ?? "—"}</TableCell><TableCell>{num(latest(row)?.games ?? null, 0)}</TableCell><TableCell>{num(latest(row)?.receivingYards ?? null, 0)}</TableCell><TableCell>{num(latest(row)?.rushingYards ?? null, 0)}</TableCell><TableCell>{num(latest(row)?.passingYards ?? null, 0)}</TableCell><TableCell>{row.model.seasons[0]?.season.year ?? "—"}</TableCell><TableCell>{row.model.confidence}</TableCell></>}
+          {view === "analytics" ? analyticColumns.map(key => <TableCell key={key} className="text-right font-mono">{metricDisplay(key, row.advanced?.metrics[key] ?? null)}</TableCell>) : <><TableCell>{latest(row)?.year ?? "—"}</TableCell><TableCell>{num(latest(row)?.games ?? null, 0)}</TableCell>{defenseView ? <><TableCell>{num(columnValue(row, "tackles") as number | null, 0)}</TableCell><TableCell>{num(columnValue(row, "sacks") as number | null, 1)}</TableCell><TableCell>{num(columnValue(row, "pd") as number | null, 0)}</TableCell></> : <><TableCell>{num(latest(row)?.receivingYards ?? null, 0)}</TableCell><TableCell>{num(latest(row)?.rushingYards ?? null, 0)}</TableCell><TableCell>{num(latest(row)?.passingYards ?? null, 0)}</TableCell></>}<TableCell>{row.model.seasons[0]?.season.year ?? "—"}</TableCell><TableCell>{row.model.confidence}</TableCell></>}
         </TableRow>)}</TableBody>
       </Table>
     </div>}
@@ -137,9 +159,9 @@ export function ProspectBoard({ rows: baseline, production, analytics = [], hist
         <DialogHeader><DialogTitle>{profile?.name}</DialogTitle></DialogHeader>
         {profile && <><div className="flex flex-wrap gap-2 text-sm"><span>{profile.school}</span><span>· {profile.position}</span><span>· {profile.draftYear} class</span></div>
           <div className="flex items-center justify-between rounded-2xl bg-foreground/5 p-5"><ProspectHeadshot player={profile} size={100} /><span className="font-dot text-6xl font-black">{num(profile.overall)}</span><span className="text-sm">{profile.tier}</span></div>
-          <dl className="grid grid-cols-3 gap-5 py-3">{profileMetrics(profile).map(([label, value]) => <div key={label}><dt className="text-xs text-muted-foreground">{label}</dt><dd className="mt-1 font-mono text-lg">{value}</dd></div>)}</dl>
-          <ProfileProduction player={profile} />
-          {profile.history && <section><h3 className="mb-2 font-semibold">{profile.history.complete ? "First three NFL seasons" : "NFL production to date"}</h3><Table><TableHeader><TableRow><TableHead>Season</TableHead><TableHead>PPR points</TableHead></TableRow></TableHeader><TableBody>{profile.history.seasons.map(season => <TableRow key={season.year}><TableCell>{season.year}{!season.complete && ` · through week ${season.throughWeek}`}</TableCell><TableCell>{num(season.ppr)}</TableCell></TableRow>)}<TableRow><TableCell>Total</TableCell><TableCell>{num(profile.history.nflPpr)}</TableCell></TableRow></TableBody></Table><p className="mt-3 text-sm">Regraded with {COLLEGE_MODEL_VERSION} using college stats{profile.draft?.kind === "Actual pick" ? " and the actual NFL draft pick (post-draft model)" : " without actual draft capital"}. {profile.history.sample} sample; not a ranking published before this player’s draft.</p></section>}
+          <dl className="grid grid-cols-3 gap-5 py-3">{profileMetrics(profile).map(([label, value]) => <div key={label}><dt><MonoLabel>{label}</MonoLabel></dt><dd className="mt-1 font-mono text-lg">{value}</dd></div>)}</dl>
+          {isDefensePosition(profile.position) ? <DefenseProfile player={profile} /> : <ProfileProduction player={profile} />}
+          {profile.history && <section><h3 className="mb-3"><MonoLabel>{profile.history.complete ? "First three NFL seasons" : "NFL production to date"}</MonoLabel></h3><Table><TableHeader><TableRow><TableHead>Season</TableHead><TableHead>{isDefensePosition(profile.position) ? "IDP points" : "PPR points"}</TableHead></TableRow></TableHeader><TableBody>{profile.history.seasons.map(season => <TableRow key={season.year}><TableCell>{season.year}{!season.complete && ` · through week ${season.throughWeek}`}</TableCell><TableCell>{num(season.ppr)}</TableCell></TableRow>)}<TableRow><TableCell>Total</TableCell><TableCell>{num(profile.history.nflPpr)}</TableCell></TableRow></TableBody></Table><p className="mt-3 text-sm">Regraded with {COLLEGE_MODEL_VERSION} using college stats{profile.draft?.kind === "Actual pick" ? " and the actual NFL draft pick (post-draft model)" : " without actual draft capital"}. {profile.history.sample} sample; not a ranking published before this player’s draft.</p></section>}
           <div className="flex flex-wrap gap-2">{profile.college && <Button asChild variant="outline"><a href={profile.college.sourceUrl} target="_blank" rel="noreferrer">College statistics <ArrowUpRight /></a></Button>}{profile.history?.nflUrl && <Button asChild variant="outline"><a href={profile.history.nflUrl} target="_blank" rel="noreferrer">NFL statistics <ArrowUpRight /></a></Button>}<Button asChild variant="ghost"><a href={profile.baselineUrl} target="_blank" rel="noreferrer">{profile.history ? "NFL draft source" : "Bakery baseline"} <ArrowUpRight /></a></Button></div>
           <p className="text-xs text-muted-foreground">{profile.college ? `ESPN synced ${profile.asOf} · Regular-season statistics` : "No verified ESPN match. Not ranked by the model."}</p>
         </>}
@@ -157,6 +179,27 @@ function profileMetrics(row: CollegeBoardRow) {
   return [["Desk rank", row.overall === null ? "—" : `#${row.rank}`], [row.history ? "NFL draft pick" : "Bakery rank", `#${row.history?.draftPick ?? row.baselineRank}`], ["Evidence", row.model.confidence], ["Scored through", String(row.model.seasons[0]?.season.year ?? "—")], ...(row.history ? [[row.history.complete ? "NFL PPR · first 3" : "NFL PPR · partial", num(row.history.nflPpr)], ["Backtest sample", row.history.sample]] : [["Height", row.height || "—"], ["Weight", row.weight === null ? "—" : `${row.weight} lb`]])];
 }
 
+function columnValue(row: CollegeBoardRow, key: string): string | number | null {
+  const season = latest(row);
+  switch (key) {
+    case "name": return row.name;
+    case "school": return row.school;
+    case "position": return row.position;
+    case "tier": return row.tier;
+    case "delta": return row.model.seasons.some(s => s.scheduleStrength) ? competitionDelta(row) : null;
+    case "bakery": return row.history?.draftPick ?? row.baselineRank;
+    case "ppr": return row.history?.nflPpr ?? null;
+    case "season": return season?.year ?? null;
+    case "games": return season?.games ?? null;
+    case "recYds": return season?.receivingYards ?? null;
+    case "rushYds": return season?.rushingYards ?? null;
+    case "passYds": return season?.passingYards ?? null;
+    case "tackles": return season?.defense?.tackles ?? null;
+    case "sacks": return season?.defense?.sacks ?? null;
+    case "pd": return season?.defense ? season.defense.interceptions + season.defense.passesDefended : null;
+    default: return row.advanced?.metrics[key] ?? null;
+  }
+}
 function latest(player: CollegeBoardRow) { return player.college?.seasons.toSorted((a, b) => b.year - a.year)[0]; }
 
 function ProspectHeadshot({ player, size }: { player: CollegeBoardRow; size: number }) {
@@ -170,18 +213,18 @@ function ProspectHeadshot({ player, size }: { player: CollegeBoardRow; size: num
 function ProfileProduction({ player }: { player: CollegeBoardRow }) {
   const scored = player.model.seasons[0];
   return <>
-    <section><h3 className="mb-3 font-semibold">Draft capital</h3>{player.draft ? <dl className="grid grid-cols-3 gap-4"><div><dt className="text-sm text-muted-foreground">{player.draft.kind}</dt><dd className="mt-1 font-mono text-xl">{player.draft.label}</dd></div><div><dt className="text-sm text-muted-foreground">Weight</dt><dd className="mt-1 font-mono text-xl">{player.overall === null ? "—" : `${Math.round(player.draft.weight * 1000) / 10}%`}</dd></div><div><dt className="text-sm text-muted-foreground">College-only score</dt><dd className="mt-1 font-mono text-xl">{num(player.collegeScore)}</dd></div></dl> : <p className="text-sm">College-only score; draft input unavailable or disabled.</p>}</section>
-    <section><h3 className="mb-3 font-semibold">Advanced analytics</h3>{player.advanced ? <>
-      <dl className="grid gap-4 sm:grid-cols-2">{ANALYTIC_COLUMNS[player.position].map(key => <div key={key}><dt className="text-sm text-muted-foreground">{METRIC_LABELS[key] ?? key}</dt><dd className="mt-1 font-mono text-xl">{metricDisplay(key, player.advanced!.metrics[key] ?? null)}</dd></div>)}</dl>
+    <section><h3 className="mb-3"><MonoLabel>Draft capital</MonoLabel></h3>{player.draft ? <dl className="grid grid-cols-3 gap-4"><div><dt><MonoLabel>{player.draft.kind}</MonoLabel></dt><dd className="mt-1 font-mono text-xl">{player.draft.label}</dd></div><div><dt><MonoLabel>Weight</MonoLabel></dt><dd className="mt-1 font-mono text-xl">{player.overall === null ? "—" : `${Math.round(player.draft.weight * 1000) / 10}%`}</dd></div><div><dt><MonoLabel>College-only score</MonoLabel></dt><dd className="mt-1 font-mono text-xl">{num(player.collegeScore)}</dd></div></dl> : <p className="text-sm">College-only score; draft input unavailable or disabled.</p>}</section>
+    <section><h3 className="mb-3"><MonoLabel>Advanced analytics</MonoLabel></h3>{player.advanced ? <>
+      <dl className="grid gap-4 sm:grid-cols-2">{ANALYTIC_COLUMNS[player.position].map(key => <div key={key}><dt><MonoLabel>{METRIC_LABELS[key] ?? key}</MonoLabel></dt><dd className="mt-1 font-mono text-xl">{metricDisplay(key, player.advanced!.metrics[key] ?? null)}</dd></div>)}</dl>
       <details className="mt-4 text-sm"><summary className="cursor-pointer">Source and model use</summary><p className="mt-2"><a href={player.advanced.sourceUrl} target="_blank" rel="noreferrer" className="underline">Bakery college metrics</a> · captured {player.advanced.capturedAt.slice(0, 10)}. Provider summary; season aggregation and route counts are not supplied. Separation is a proxy from contested/uncontested target rates, not tracking distance. {player.advancedWeight > 0 ? `${Math.round(player.advancedWeight * 100)}% of the college component.` : "Available for analysis; the tested blend did not pass training and validation checks, so it has no ranking weight."}</p></details>
     </> : <p className="text-sm">Advanced metrics unavailable.</p>}</section>
-    {scored && <section><h3 className="mb-2 font-semibold">Competition adjustment</h3><Table><TableHeader><TableRow><TableHead>Season</TableHead><TableHead>School</TableHead><TableHead>Opponent strength</TableHead><TableHead>Production score</TableHead><TableHead>Adjustment</TableHead></TableRow></TableHeader><TableBody>{player.model.seasons.map(s => <TableRow key={s.season.year}><TableCell>{s.season.year}</TableCell><TableCell>{s.season.school}</TableCell><TableCell>{s.scheduleStrength ? signed(s.scheduleStrength.opponents) : "Unavailable"}</TableCell><TableCell>{num(s.productionScore)}</TableCell><TableCell>{s.scheduleStrength ? signed(s.score - s.productionScore) : "—"}</TableCell></TableRow>)}</TableBody></Table></section>}
-    {scored && <section><h3 className="mb-3 font-semibold">{scored.season.year} model inputs</h3><div className="grid gap-4 sm:grid-cols-2">{scored.components.map(component => <div key={component.label}>
+    {scored && <section><h3 className="mb-3"><MonoLabel>Competition adjustment</MonoLabel></h3><Table><TableHeader><TableRow><TableHead>Season</TableHead><TableHead>School</TableHead><TableHead>Opponent strength</TableHead><TableHead>Production score</TableHead><TableHead>Adjustment</TableHead></TableRow></TableHeader><TableBody>{player.model.seasons.map(s => <TableRow key={s.season.year}><TableCell>{s.season.year}</TableCell><TableCell>{s.season.school}</TableCell><TableCell>{s.scheduleStrength ? signed(s.scheduleStrength.opponents) : "Unavailable"}</TableCell><TableCell>{num(s.productionScore)}</TableCell><TableCell>{s.scheduleStrength ? signed(s.score - s.productionScore) : "—"}</TableCell></TableRow>)}</TableBody></Table></section>}
+    {scored && <section><h3 className="mb-3"><MonoLabel>{scored.season.year} model inputs</MonoLabel></h3><div className="grid gap-4 sm:grid-cols-2">{scored.components.map(component => <div key={component.label}>
       <div className="flex justify-between gap-3 text-sm"><span>{component.label}</span><span className="font-mono">{component.value === null ? "—" : component.units === "%" ? `${(component.value * 100).toFixed(1)}%` : component.value.toFixed(1)}</span></div>
-      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-foreground/10"><div className="h-full rounded-full bg-signal" style={{ width: `${component.score ?? 0}%` }} /></div>
-      <div className="mt-1 text-xs text-muted-foreground">{Math.round(component.weight * 100)}% weight · {component.score === null ? "Missing" : `${Math.round(component.score)}/100 component score`}</div>
+      <div className="mt-2"><SpreadMeter value={component.score} /></div>
+      <div className="mt-2 font-mono text-[11px] text-muted-foreground">{Math.round(component.weight * 100)}% weight · {component.score === null ? "Missing" : `${Math.round(component.score)}/100 component score`}</div>
     </div>)}</div></section>}
-    {!!player.college?.seasons.length && <section className="mt-3"><h3 className="mb-2 font-semibold">College production</h3>
+    {!!player.college?.seasons.length && <section className="mt-3"><h3 className="mb-3"><MonoLabel>College production</MonoLabel></h3>
       <Table><TableHeader><TableRow>{["Season", "School", "Games", "Rec", "Rec yds", "Rec TD", "Carries", "Rush yds", "Rush TD", "Pass att", "Pass yds", "Pass TD", "INT"].map(label => <TableHead key={label}>{label}</TableHead>)}</TableRow></TableHeader>
         <TableBody>{player.college.seasons.map(s => <TableRow key={s.year}><TableCell><a href={s.sourceUrl} target="_blank" rel="noreferrer" className="underline underline-offset-4">{s.year}</a></TableCell><TableCell>{s.school}</TableCell>{[s.games, s.receptions, s.receivingYards, s.receivingTD, s.carries, s.rushingYards, s.rushingTD, s.attempts, s.passingYards, s.passingTD, s.interceptions].map((v, i) => <TableCell key={i}>{num(v, 0)}</TableCell>)}</TableRow>)}</TableBody>
       </Table>
@@ -205,7 +248,9 @@ function ModelNotes({ status }: { status: CollegeSyncResult | null }) {
     <p className="text-sm">Actual NFL picks are used only in post-draft grades. Future classes use the imported projection at half the learned weight; that uncertainty discount is a heuristic, not validated on archived projections. Unknown projections leave the college score unchanged. Switch to College-only grade to exclude both inputs.</p>
     <Table><TableHeader><TableRow><TableHead>Position</TableHead><TableHead>Actual / projected weight</TableHead><TableHead>College ρ</TableHead><TableHead>Blended ρ</TableHead><TableHead>Pick-only ρ</TableHead></TableRow></TableHeader><TableBody>{DRAFT_CALIBRATION.results.map(r => <TableRow key={r.position}><TableCell>{r.position}</TableCell><TableCell>{r.weight * 100}% / {r.weight * 50}%</TableCell><TableCell>{num(r.baseline.rho, 3)}</TableCell><TableCell>{num(r.adjusted.rho, 3)}</TableCell><TableCell>{num(r.draftOnly.rho, 3)}</TableCell></TableRow>)}</TableBody></Table>
     <p className="text-sm">Weights selected using 2016–2018 training and 2019–2020 validation. Reported correlations use first-three-season NFL PPR for reused 2021–2023 evaluation classes. These are post-draft results, not pre-draft predictions. Pick alone outperforms the WR blend on this evaluation; the blend was chosen on validation. Projection performance has not been backtested. Draft score falls along fixed pick anchors; projected rounds average their approximate pick range.</p>
-    <p className="text-sm">An independent college production index. Bakery supplies advanced college metrics, the class list and comparison ranks; its overall grades, projected times and NFL finishes do not enter the score. Draft-aware mode uses actual NFL picks for completed classes or imported projected ranges for future prospects. Draft classes remain projections.</p>
+    <h3 className="font-semibold">Bakery grade</h3>
+    <p className="text-sm">Where Bakery publishes an overall grade, it replaces the production-only college score and is blended with the draft signal at the weights below. Classes without a grade use a grade predicted from college production, advanced metrics and draft age ({GRADE_MODEL_CALIBRATION.results.map(r => `${r.position} ρ ${num(r.gradeRhoHeldOut, 2)}`).join(", ")} against published grades, classes held out), blended with draft capital at {GRADE_MODEL_CALIBRATION.results.map(r => `${r.position} ${Math.round(r.draftWeight * 100)}%`).join(", ")}. Prospects without enough data keep the independent college model. Grades for past classes may have been tuned on NFL results, so draft capital keeps at least 30%. Correlations are against first-three-season NFL PPR, 2016–2023.</p>
+    <Table><TableHeader><TableRow><TableHead>Position</TableHead><TableHead>Draft weight</TableHead><TableHead>Blended ρ</TableHead><TableHead>Previous ρ</TableHead><TableHead>Pick-only ρ</TableHead></TableRow></TableHeader><TableBody>{BAKERY_CALIBRATION.results.map(r => <TableRow key={r.position}><TableCell>{r.position}</TableCell><TableCell>{Math.round(r.weight * 100)}%</TableCell><TableCell>{num(r.rho, 3)}</TableCell><TableCell>{num(r.legacyRho, 3)}</TableCell><TableCell>{num(r.draftOnlyRho, 3)}</TableCell></TableRow>)}</TableBody></Table>
     <h3 className="font-semibold">Advanced analytics</h3>
     <p className="text-sm">Receivers: yards and targets per route, uncontested targets per route, yards after catch, drops. Backs: missed tackles forced, yards after contact and receiving involvement. Quarterbacks: adjusted completions, big-time throws and turnover-worthy plays. Separation is a target-based proxy, not measured distance from defenders.</p>
     <Table><TableHeader><TableRow><TableHead>Position</TableHead><TableHead>Coverage</TableHead><TableHead>Ranking weight</TableHead><TableHead>Evaluation ρ</TableHead></TableRow></TableHeader><TableBody>{ADVANCED_CALIBRATION.results.map(r => <TableRow key={r.position}><TableCell>{r.position}</TableCell><TableCell>{r.coverage}/{r.total}</TableCell><TableCell>{Math.round(r.weight * 100)}%</TableCell><TableCell>{num(r.baseline.rho, 3)} → {num(r.adjusted.rho, 3)}</TableCell></TableRow>)}</TableBody></Table>

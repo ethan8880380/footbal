@@ -163,10 +163,15 @@ export interface ScheduleGame {
   week: number;
   gameType: string;
   gameday: string | null;
+  /** Kickoff in US Eastern time, "HH:MM". */
+  gametime: string | null;
   homeTeam: string;
   awayTeam: string;
   homeScore: number | null;
   awayScore: number | null;
+  /** Vegas spread from the home side: positive means the home team is favored. */
+  spreadLine: number | null;
+  totalLine: number | null;
 }
 
 export interface DraftProspectRecord {

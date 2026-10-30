@@ -6,7 +6,7 @@ import type { ScheduleGame, TeamGameTotals } from "./types";
 const scoring = { settings: { rec: 1, rec_yd: 0.1, rec_td: 6 }, support: analyzeScoringSupport({ rec: 1, rec_yd: 0.1, rec_td: 6 }) };
 
 function game(week: number, home: string, away: string, played = true): ScheduleGame {
-  return { gameId: `g${week}-${home}`, season: 2026, week, gameType: "REG", gameday: `2026-09-${10 + week}`, homeTeam: home, awayTeam: away, homeScore: played ? 20 : null, awayScore: played ? 17 : null };
+  return { gameId: `g${week}-${home}`, season: 2026, week, gameType: "REG", gameday: `2026-09-${10 + week}`, gametime: "13:00", homeTeam: home, awayTeam: away, homeScore: played ? 20 : null, awayScore: played ? 17 : null, spreadLine: null, totalLine: null };
 }
 
 function totals(gameId: string, week: number, targets: number): TeamGameTotals {

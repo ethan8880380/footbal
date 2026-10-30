@@ -42,6 +42,16 @@ export const SLOT_LABELS: Record<string, string> = {
   IDP_FLEX: "IDP flex",
 };
 
+export const SLOT_SHORT_LABELS: Record<string, string> = {
+  SUPER_FLEX: "SF",
+  FLEX: "FLX",
+  REC_FLEX: "WRT",
+  WR_RB_FLEX: "WRT",
+  WRRB_FLEX: "WRT",
+  IDP_FLEX: "IDP",
+  DEF: "DST",
+};
+
 export function normalizePosition(position: string | null | undefined): string | null {
   if (!position) return null;
   const upper = position.toUpperCase();

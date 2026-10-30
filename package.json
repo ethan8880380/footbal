@@ -23,6 +23,13 @@
     "competition:backtest": "tsx scripts/backtest-competition.ts",
     "competition:strength": "tsx scripts/backtest-competition-strength.ts",
     "draft:backtest": "tsx scripts/backtest-draft-capital.ts",
+    "bakery:import": "tsx scripts/import-bakery-workbook.ts",
+    "bakery:backtest": "tsx scripts/backtest-bakery.ts",
+    "defense:collect": "tsx scripts/collect-defense-backtest.ts",
+    "defense:train": "tsx scripts/train-defense-model.ts",
+    "defense:export": "tsx scripts/export-defense-prospects.ts",
+    "defense:class": "tsx scripts/collect-defense-class.ts",
+    "bakery:train": "tsx scripts/train-grade-model.ts",
     "analytics:import": "tsx scripts/import-advanced-prospects.ts",
     "analytics:backtest": "tsx scripts/backtest-advanced.ts",
     "analytics:research": "tsx scripts/build-prospect-lab.ts"
@@ -60,7 +67,8 @@
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
     "typescript": "^5",
-    "vitest": "^5.0.5"
+    "vitest": "^5.0.5",
+    "xlsx": "^0.18.5"
   },
   "packageManager": "pnpm@10.34.4"
 }

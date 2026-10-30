@@ -25,6 +25,7 @@ import type {
 } from "@/lib/domain/types";
 import { STATS_GUY, mapLeagueToStatsGuy } from "@/lib/providers/market/stats-guy";
 import { NFLVERSE_URLS } from "@/lib/providers/nflverse/nflverse-client";
+import { SPORTSGAMEODDS, sportsGameOddsKey } from "@/lib/providers/sportsgameodds/sportsgameodds-client";
 import { REFRESH_INTERVALS } from "@/lib/ingest/freshness";
 import { aiProviderStatus } from "@/lib/ai/provider";
 
@@ -143,6 +144,8 @@ function buildSourceStatuses(
   importedCount: number,
 ): SourceStatus[] {
   const find = (scope: string, key: string) => runs.find((r) => r.scope === scope && r.key === key) ?? null;
+  const latest = (scope: string) =>
+    runs.filter((r) => r.scope === scope && r.finishedAt).sort((a, b) => b.finishedAt!.localeCompare(a.finishedAt!))[0] ?? null;
   const fromRun = (id: string, label: string, run: SyncRun | null, maxAgeMs: number, fallbackUrl: string | null): SourceStatus => {
     if (!run) return { id, label, state: "unavailable", detail: "Not synced yet.", dataCutoff: null, retrievedAt: null, sourceUrl: fallbackUrl };
     const age = run.finishedAt ? Date.now() - new Date(run.finishedAt).getTime() : Infinity;
@@ -171,7 +174,11 @@ function buildSourceStatuses(
       REFRESH_INTERVALS.stats,
       NFLVERSE_URLS.docs,
     ),
-    fromRun("schedule", "nflverse schedule", find("schedule", "nflverse"), REFRESH_INTERVALS.stats, NFLVERSE_URLS.schedule),
+    fromRun("schedule", "nflverse schedule and Vegas lines", find("schedule", "nflverse"), REFRESH_INTERVALS.stats, NFLVERSE_URLS.schedule),
+    fromRun("projections", "Sleeper weekly projections", latest("projections"), REFRESH_INTERVALS.projections, "https://sleeper.com/"),
+    sportsGameOddsKey()
+      ? fromRun("props", "Player props (SportsGameOdds)", find("props", SPORTSGAMEODDS.id), REFRESH_INTERVALS.props, SPORTSGAMEODDS.docs)
+      : { id: "props", label: "Player props (SportsGameOdds)", state: "unavailable", detail: "Set SPORTSGAMEODDS_API_KEY to pull prop lines.", dataCutoff: null, retrievedAt: null, sourceUrl: SPORTSGAMEODDS.docs },
     fromRun("prospects", "Draft and combine (nflverse)", find("prospects", "nflverse"), REFRESH_INTERVALS.prospects, NFLVERSE_URLS.combine),
     market?.provider === "csv"
       ? { id: "market", label: "Market values (CSV)", state: "fresh", detail: "Imported values.", dataCutoff: market.valuedAt, retrievedAt: market.retrievedAt, sourceUrl: null }

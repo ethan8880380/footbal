@@ -6,7 +6,7 @@ const all = ["QB", "RB", "WR", "TE"];
 const receivers = ["WR", "TE", "RB"];
 const metric = (key: string, label: string, group: string, unit: string, positions = all, definition = label, lower = false): Metric => ({ key, label, group, unit, positions, definition, lower });
 export const LAB_METRICS: Metric[] = [
-  metric("college", "Competition-adjusted college score", "Context", "score"),
+  metric("college", "College grade", "Context", "score"),
   metric("schedule", "Opponent strength", "Context", "pts"),
   metric("games", "Latest season games", "Opportunity", "games"),
   metric("seasons", "College seasons", "Opportunity", "seasons"),

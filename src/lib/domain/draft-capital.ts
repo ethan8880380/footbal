@@ -22,11 +22,11 @@ export function projectionScore(label: string) {
   for (let pick = range[0]; pick <= range[1]; pick++) sum += draftPickScore(pick)!;
   return sum / (range[1] - range[0] + 1);
 }
-export function draftSignal(position: "QB" | "RB" | "WR" | "TE", actualPick: number | undefined, projection: string): DraftSignal | null {
+export function draftSignal(position: string, actualPick: number | undefined, projection: string, weight: number = calibration.weights[position as keyof typeof calibration.weights] ?? .65): DraftSignal | null {
   const actual = actualPick === undefined ? null : draftPickScore(actualPick);
-  if (actual !== null) return { kind: "Actual pick", label: `#${actualPick}`, score: actual, weight: calibration.weights[position] };
+  if (actual !== null) return { kind: "Actual pick", label: `#${actualPick}`, score: actual, weight };
   const projected = projectionScore(projection);
-  return projected === null ? null : { kind: "Projection", label: projection, score: projected, weight: calibration.weights[position] * .5 };
+  return projected === null ? null : { kind: "Projection", label: projection, score: projected, weight: weight * .5 };
 }
 export function blendDraftCapital(base: number | null, signal: DraftSignal | null) {
   return base === null ? null : signal ? Math.round((base * (1 - signal.weight) + signal.score * signal.weight) * 10) / 10 : base;

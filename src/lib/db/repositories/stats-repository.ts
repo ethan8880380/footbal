@@ -27,6 +27,11 @@ export async function replaceSchedule(seasons: number[], games: ScheduleGame[], 
   });
 }
 
+export async function getSeasonSchedule(season: number, database?: Database): Promise<ScheduleGame[]> {
+  const db = await resolveDb(database);
+  return db.select().from(scheduleGames).where(eq(scheduleGames.season, season));
+}
+
 export async function replaceProspects(
   draft: (DraftProspectRecord & { gsisId: string | null; position: string | null })[],
   combine: (CombineRecord & { position: string | null; school: string | null })[],

@@ -1,4 +1,4 @@
-﻿import { DotMeter, DotStack } from "@/components/viz/dot-meter";
+﻿import { DOT_OFF, DotMeter, DotStack } from "@/components/viz/dot-meter";
 import { MonoLabel, Readout } from "@/components/viz/readout";
 import { cn } from "@/lib/utils";
 
@@ -9,7 +9,7 @@ const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v
 interface DivergingProps { value: number | null; scale?: number; side?: number; tone?: "default" | "muted" | "signal"; size?: "sm" | "md" }
 
 /** Zero-centred dot bar. Negative values fill leftward in the negative tone, so sign never depends on colour alone. */
-function Diverging({ value, scale = 1, side = SIDE, tone = "default", size = "md" }: DivergingProps) {
+export function Diverging({ value, scale = 1, side = SIDE, tone = "default", size = "md" }: DivergingProps) {
   const lit = value === null ? 0 : Math.round(clamp(Math.abs(value) / scale, 0, 1) * side);
   const negative = value !== null && value < 0;
   return (
@@ -153,5 +153,34 @@ export function ChartCard({ title, readout, unit, children, className }: { title
       <div className="flex items-start justify-between gap-3"><MonoLabel>{title}</MonoLabel>{readout ? <Readout value={readout} unit={unit} /> : null}</div>
       {children}
     </section>
+  );
+}
+
+const WIDE_DOT = "size-2 shrink-0 rounded-full";
+
+/** Full-width dot row; lit dots in foreground with the leading dot in signal so the value reads as a position. */
+export function SpreadMeter({ value, total = 25 }: { value: number | null; total?: number }) {
+  const lit = value === null ? 0 : Math.round(clamp(value, 0, 100) / 100 * total);
+  return (
+    <span aria-hidden className="flex w-full justify-between">
+      {Array.from({ length: total }, (_, i) => <span key={i} className={cn(WIDE_DOT, i >= lit ? DOT_OFF : i === lit - 1 ? "bg-signal" : "bg-foreground/70")} />)}
+    </span>
+  );
+}
+
+/** Full-width zero-centred dot row; direction is carried by side and the centre rule, magnitude by dot count. */
+export function SpreadDiverging({ value, scale, side = 10 }: { value: number | null; scale: number; side?: number }) {
+  const lit = value === null ? 0 : Math.round(clamp(Math.abs(value) / scale, 0, 1) * side), negative = value !== null && value < 0;
+  const half = (on: number, tone: string, reverse: boolean) => (
+    <span className={cn("flex flex-1 justify-between", reverse && "flex-row-reverse")}>
+      {Array.from({ length: side }, (_, i) => <span key={i} className={cn(WIDE_DOT, i >= on ? DOT_OFF : i === on - 1 ? tone : "bg-foreground/70")} />)}
+    </span>
+  );
+  return (
+    <span aria-hidden className="flex w-full items-center gap-2">
+      {half(negative ? lit : 0, "bg-negative", true)}
+      <span className="h-4 w-px shrink-0 bg-foreground/40" />
+      {half(negative ? 0 : lit, "bg-signal", false)}
+    </span>
   );
 }
