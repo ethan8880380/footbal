@@ -16,7 +16,8 @@ interface DbHandle {
 const globalForDb = globalThis as unknown as { dynastyDeskDb?: DbHandle };
 
 function resolveUrl() {
-  const url = process.env.DATABASE_URL ?? "file:./data/dynasty-desk.db";
+  const fallback = process.env.VERCEL ? "file:/tmp/dynasty-desk.db" : "file:./data/dynasty-desk.db";
+  const url = process.env.DATABASE_URL || fallback;
   if (url.startsWith("file:")) {
     const filePath = url.slice("file:".length);
     if (filePath !== ":memory:") mkdirSync(path.dirname(path.resolve(filePath)), { recursive: true });
@@ -25,11 +26,13 @@ function resolveUrl() {
 }
 
 function createHandle(url: string): DbHandle {
-  const client = createClient({ url });
+  const client = createClient({ url, authToken: process.env.DATABASE_AUTH_TOKEN });
   const db = drizzle(client, { schema });
   const ready = (async () => {
-    await client.execute("PRAGMA journal_mode = WAL");
-    await client.execute("PRAGMA busy_timeout = 5000");
+    if (url.startsWith("file:")) {
+      await client.execute("PRAGMA journal_mode = WAL");
+      await client.execute("PRAGMA busy_timeout = 5000");
+    }
     await migrate(db, { migrationsFolder: path.resolve(process.cwd(), "drizzle") });
   })();
   return { client, db, ready };
